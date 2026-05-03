@@ -4,126 +4,128 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mewatee.com</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(ellipse at center, #1a0e04 0%, #0d0b09 70%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
-        canvas {
-            display: block;
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <canvas id="c"></canvas>
-    <script>
-        const FONT = {
-            'M': [[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
-            'E': [[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
-            'W': [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,1,0,1],[0,1,0,1,0]],
-            'A': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
-            'T': [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
-            '.': [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,1,0]],
-            'C': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0]],
-            'O': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]]
-        };
 
-        const LINE1 = 'MEWATEE';
-        const LINE2 = '.COM';
-        const CHAR_GAP = 2;
-        const GAP = 2;
-        const PAD = 20;
-        const LINE_GAP = 3;
+    <!-- Background layers -->
+    <div class="bg"></div>
+    <div class="grid-bg"></div>
+    <div class="scanlines"></div>
+    <canvas id="particles"></canvas>
 
-        function lineUnits(text) {
-            let w = 0;
-            for (let i = 0; i < text.length; i++) {
-                w += FONT[text[i]][0].length;
-                if (i < text.length - 1) w += CHAR_GAP;
-            }
-            return w;
-        }
+    <!-- Corner brackets -->
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+    <div class="status-line"></div>
 
-        const W1 = lineUnits(LINE1);
-        const W2 = lineUnits(LINE2);
+    <!-- ── Main Scene ── -->
+    <div id="scene">
+        <div class="logo-wrap">
+            <canvas id="c"></canvas>
+        </div>
+        <button class="btn-dashboard" id="btnDash" onclick="openModal()">
+            <span class="bc tl"></span>
+            <span class="bc tr"></span>
+            <span class="bc bl"></span>
+            <span class="bc br"></span>
+            Dashboard
+        </button>
+    </div>
 
-        const avail = Math.max(280, window.innerWidth - 60);
-        const STEP  = Math.min(14, Math.max(7, Math.floor((avail - PAD * 2 + GAP) / W1)));
-        const PIXEL = STEP - GAP;
+    <!-- ── Password Modal ── -->
+    <div class="overlay" id="overlay">
+        <div class="modal">
+            <div class="mc tl"></div><div class="mc tr"></div>
+            <div class="mc bl"></div><div class="mc br"></div>
 
-        const CW = PAD * 2 + W1 * STEP - GAP;
-        const CH = PAD * 2 + 7 * STEP - GAP + LINE_GAP * STEP + 7 * STEP - GAP;
+            <div class="modal-label">Access Required</div>
+            <div class="modal-hint">Enter authorization code to continue</div>
+            <div class="modal-icon">⬡</div>
 
-        const canvas = document.getElementById('c');
-        const ctx    = canvas.getContext('2d');
-        canvas.width  = CW;
-        canvas.height = CH;
+            <div class="pin-dots">
+                <div class="pin-dot" id="d0"></div>
+                <div class="pin-dot" id="d1"></div>
+                <div class="pin-dot" id="d2"></div>
+                <div class="pin-dot" id="d3"></div>
+                <div class="pin-dot" id="d4"></div>
+                <div class="pin-dot" id="d5"></div>
+            </div>
 
-        const T0 = performance.now();
+            <input
+                type="password"
+                id="pwInput"
+                class="pw-input"
+                maxlength="20"
+                autocomplete="off"
+                placeholder="••••••"
+                oninput="onInput()"
+                onkeydown="onKey(event)"
+            />
+            <div class="modal-err" id="modalErr">INVALID CODE — ACCESS DENIED</div>
 
-        function getAlpha(px, ts) {
-            const elapsed = ts - T0;
-            const t = Math.max(0, px - PAD) / (CW - PAD * 2);
-            const revealAt = t * 1600;
-            const fadeMs   = 200;
-            if (elapsed < revealAt) return 0;
-            if (elapsed < revealAt + fadeMs) return (elapsed - revealAt) / fadeMs;
-            return 1;
-        }
+            <div class="modal-btns">
+                <button class="mbtn mbtn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="mbtn mbtn-enter"  onclick="submitPw()">Enter</button>
+            </div>
+        </div>
+    </div>
 
-        function pixelColor(px, row, ts) {
-            const wave  = (Math.sin(ts * 0.0009 + px * 0.025 + row * 0.08) + 1) / 2;
-            const hue   = 38 - wave * 18;
-            const light = 52 + wave * 22;
-            return `hsl(${hue},95%,${light}%)`;
-        }
+    <!-- ── Dashboard ── -->
+    <div id="dashboard">
+        <div class="dash-header">
+            <div>
+                <div class="dash-brand">Mewatee <span>// Control Panel</span></div>
+                <div class="dash-user" id="dashUser"></div>
+            </div>
+            <button class="btn-lock" onclick="lockDash()">⬡ Lock</button>
+        </div>
 
-        function drawLine(text, xOffset, yTop, ts) {
-            let xUnit = 0;
-            for (let ci = 0; ci < text.length; ci++) {
-                const map = FONT[text[ci]];
-                const cw  = map[0].length;
-                for (let row = 0; row < 7; row++) {
-                    for (let col = 0; col < cw; col++) {
-                        if (!map[row][col]) continue;
-                        const px = xOffset + (xUnit + col) * STEP;
-                        const py = yTop + row * STEP;
-                        const a  = getAlpha(px, ts);
-                        if (a <= 0) continue;
-                        const color = pixelColor(px, row, ts);
-                        ctx.globalAlpha = a;
-                        ctx.shadowColor = color;
-                        ctx.shadowBlur  = 6 + (Math.sin(ts * 0.0012 + px * 0.03) + 1) * 5;
-                        ctx.fillStyle   = color;
-                        ctx.fillRect(px, py, PIXEL, PIXEL);
-                    }
-                }
-                xUnit += cw + CHAR_GAP;
-            }
-        }
+        <div class="dash-body">
 
-        function draw(ts) {
-            ctx.clearRect(0, 0, CW, CH);
+            <!-- Mission Control -->
+            <div class="section-label">Quick Access</div>
+            <a class="btn-mission" href="https://owa-mission.vercel.app/tasks" target="_blank" rel="noopener">
+                <span class="mc-icon">⊕</span>
+                Mission Control
+                <span class="mc-arrow">→</span>
+            </a>
 
-            drawLine(LINE1, PAD, PAD, ts);
-            drawLine(LINE2, PAD + Math.round((W1 - W2) / 2) * STEP, PAD + (7 + LINE_GAP) * STEP, ts);
+            <!-- Stats -->
+            <div class="section-label">Overview</div>
+            <div class="cards">
+                <div class="card">
+                    <div class="card-dot"></div>
+                    <div class="card-lbl">Status</div>
+                    <div class="card-val" style="font-size:15px;letter-spacing:2px;">ONLINE</div>
+                    <div class="card-sub">All systems operational</div>
+                </div>
+                <div class="card">
+                    <div class="card-lbl">Version</div>
+                    <div class="card-val">1.0</div>
+                    <div class="card-sub">Current build</div>
+                </div>
+                <div class="card">
+                    <div class="card-lbl">Domain</div>
+                    <div class="card-val" style="font-size:14px;letter-spacing:1px;">mewatee.com</div>
+                    <div class="card-sub">Active</div>
+                </div>
+                <div class="card">
+                    <div class="card-lbl">Uptime</div>
+                    <div class="card-val" id="uptimeVal">—</div>
+                    <div class="card-sub">Since session start</div>
+                </div>
+            </div>
 
-            ctx.shadowBlur  = 0;
-            ctx.globalAlpha = 1;
-            requestAnimationFrame(draw);
-        }
+            <!-- Activity log -->
+            <div class="section-label">Activity Log</div>
+            <div class="activity-log" id="actLog"></div>
 
+        </div>
+    </div>
 
-        
-        requestAnimationFrame(draw);
-    </script>
+    <script src="js/main.js"></script>
 </body>
 </html>
