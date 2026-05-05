@@ -23,17 +23,60 @@
     <div class="status-line"></div>
 
     <!-- ── Main Scene ── -->
+    <!-- Mini top-right nav -->
+    <div class="top-nav">
+        <button class="btn-mini btn-mini-dash" onclick="openModal()">⊞ CTRL</button>
+    </div>
+
     <div id="scene">
         <div class="logo-wrap">
             <canvas id="c"></canvas>
         </div>
-        <button class="btn-dashboard" id="btnDash" onclick="openModal()">
-            <span class="bc tl"></span>
-            <span class="bc tr"></span>
-            <span class="bc bl"></span>
-            <span class="bc br"></span>
-            Dashboard
+        <button class="btn-game" id="btnGame" onclick="openGame()">
+            <span class="bgc tl"></span>
+            <span class="bgc tr"></span>
+            <span class="bgc bl"></span>
+            <span class="bgc br"></span>
+            ▶ Play
         </button>
+        <button class="btn-about-scene" onclick="openAbout()">About</button>
+    </div>
+
+    <!-- ── About Modal ── -->
+    <div class="overlay" id="about-overlay">
+        <div class="modal about-modal">
+            <div class="mc tl"></div><div class="mc tr"></div>
+            <div class="mc bl"></div><div class="mc br"></div>
+
+            <div class="modal-label">About</div>
+            <div class="about-hero">MEWATEE.COM</div>
+            <div class="about-tagline">Personal space // Creative hub</div>
+
+            <div class="about-block">
+                <div class="about-sec">Overview</div>
+                <div class="about-body">This is Mewatee's personal digital space — a hub for projects, experiments, and the Meow-tropolis streetwear simulation game.</div>
+            </div>
+
+            <div class="about-block">
+                <div class="about-sec">Game Controls</div>
+                <div class="ctrl-grid">
+                    <span class="ctrl-k">WASD / ↑↓←→</span><span class="ctrl-d">Move</span>
+                    <span class="ctrl-k">SHIFT</span><span class="ctrl-d">Sprint</span>
+                    <span class="ctrl-k">E</span><span class="ctrl-d">Interact / Eliminate stunned guard</span>
+                    <span class="ctrl-k">Q</span><span class="ctrl-d">Throw stun grenade</span>
+                    <span class="ctrl-k">F</span><span class="ctrl-d">Ghost Protocol (unlocks at 50 cred)</span>
+                    <span class="ctrl-k">C</span><span class="ctrl-d">Slow Aura — crawls guards in 95px (unlocks at 75 cred)</span>
+                    <span class="ctrl-k">ESC</span><span class="ctrl-d">Close market</span>
+                </div>
+            </div>
+
+            <div class="about-block">
+                <div class="about-sec">Tips</div>
+                <div class="about-body">Scavenge materials → Enter shop → Match customer preferences for combo bonuses → Boss spawns every 5 days, getting stronger each time.</div>
+            </div>
+
+            <button class="mbtn mbtn-enter" style="width:100%;margin-top:8px" onclick="closeAbout()">Close</button>
+        </div>
     </div>
 
     <!-- ── Password Modal ── -->
@@ -124,6 +167,127 @@
             <div class="section-label">Activity Log</div>
             <div class="activity-log" id="actLog"></div>
 
+        </div>
+    </div>
+
+    <!-- ── Game Screen ── -->
+    <div id="game-screen">
+        <canvas id="rain-canvas"></canvas>
+
+        <div class="game-header">
+            <div>
+                <div class="game-brand">Meow-tropolis <span id="game-brand-sub">// Day 1 — Neon District</span></div>
+                <div class="game-sub" id="game-sub-line">// Laundromat Front — 23:14 — Boutique Mode Active</div>
+            </div>
+            <button class="btn-game-exit" onclick="closeGame()">[ EXIT ]</button>
+        </div>
+
+        <div class="game-body">
+            <div class="game-sidebar">
+                <div class="game-sec-lbl">Inventory</div>
+                <div class="inv-item" id="inv-tees">3x Plain Black Cotton Tee</div>
+                <div class="inv-item inv-rare" id="inv-ink">1x Reflective Ink <span class="inv-badge">RARE</span></div>
+                <div class="inv-item inv-cash" id="inv-cash">$200 Cash</div>
+                <div class="inv-item" id="inv-stun" style="color:#00ffcc">2x Stun Grenade <span class="inv-badge" style="border-color:#00ffcc44;color:#00ffcc">[Q]</span></div>
+
+                <div class="game-sec-lbl" style="margin-top:20px">Strikes</div>
+                <div class="strike-row">
+                    <div class="strike-dot" id="sd0"></div>
+                    <div class="strike-dot" id="sd1"></div>
+                    <div class="strike-dot" id="sd2"></div>
+                </div>
+                <div class="cred-num" id="strike-label">CLEAN</div>
+
+                <div class="game-sec-lbl" style="margin-top:20px">Street Cred</div>
+                <div class="cred-track"><div class="cred-fill" id="cred-fill" style="width:12%"></div></div>
+                <div class="cred-num" id="cred-num">12 / 100 — Rookie</div>
+
+                <div class="game-sec-lbl" style="margin-top:20px">Stamina</div>
+                <div class="cred-track"><div class="stamina-fill" id="stamina-fill" style="width:100%"></div></div>
+                <div class="cred-num" id="stamina-num">FRESH</div>
+
+                <div class="game-sec-lbl" style="margin-top:20px">Contacts</div>
+                <div class="contact-row">DJ Crow <span class="contact-status">Neutral</span></div>
+                <div class="contact-row">Graffiti Raccoon <span class="contact-status">Neutral</span></div>
+
+                <div class="game-sec-lbl" style="margin-top:20px">Ability</div>
+                <div id="invis-status" class="invis-status invis-locked">GHOST — Reach KNOWN (50 cred)</div>
+                <div id="invis-bar-wrap" class="cred-track" style="display:none"><div class="invis-bar" id="invis-bar" style="width:0%"></div></div>
+                <div id="slow-status" class="invis-status invis-locked" style="margin-top:8px">SLOW AURA — Reach LEGEND (75 cred)</div>
+                <div id="slow-bar-wrap" class="cred-track" style="display:none"><div class="slow-bar" id="slow-bar" style="width:0%"></div></div>
+
+                <div class="game-sec-lbl" style="margin-top:20px">Districts</div>
+                <div class="district-row active-district" id="dist-0">&gt; Neon District</div>
+                <div class="district-row locked-district" id="dist-1">-- Syndicate Quarter</div>
+                <div class="district-row locked-district" id="dist-2">-- The Underground</div>
+                <div class="district-row locked-district" id="dist-3">-- Rooftop Circuit</div>
+            </div>
+
+            <div class="game-main">
+                <canvas id="game-canvas"></canvas>
+
+                <div id="mapUI" class="map-bar" style="display:none">
+                    <span>DAY <span id="mapDay">1</span></span>
+                    <span>TURNS: <span id="mapTurns">3</span></span>
+                    <span id="mapStatus" class="map-status-msg"></span>
+                    <span>MATS: <span id="mapMats">--</span></span>
+                </div>
+
+                <div class="rpg-box" id="rpgBox" style="display:none">
+                    <div class="rpg-name" id="rpgName">CUSTOMER</div>
+                    <div class="rpg-text" id="rpgText"><span class="rpg-cursor">_</span></div>
+                </div>
+
+                <div id="craftOptions" style="display:none"></div>
+
+                <div id="craftResult" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Boss Banner ── -->
+    <div id="boss-banner" class="boss-banner">
+        <div class="bb-star">★</div>
+        <div class="bb-eyebrow" id="bb-level">BOSS ENCOUNTER</div>
+        <div class="bb-name" id="bb-name">CAPTAIN VICE</div>
+        <div class="bb-title" id="bb-title">Syndicate Captain</div>
+        <div class="bb-abilities" id="bb-abilities">Abilities: Scan Laser</div>
+        <div class="bb-warn">— CAUGHT = 2 STRIKES —</div>
+    </div>
+
+    <!-- ── Map Transition Banner ── -->
+    <div id="map-banner" class="map-banner">
+        <div class="mb-type">NEW DISTRICT UNLOCKED</div>
+        <div class="mb-name" id="mb-name">SYNDICATE QUARTER</div>
+        <div class="mb-sub" id="mb-sub">// Day 5 — New district unlocked</div>
+    </div>
+
+    <!-- ── Game Over Overlay ── -->
+    <div id="gameover-overlay" class="gameover-overlay">
+        <div class="gameover-modal">
+            <div class="go-eyebrow">// OPERATION TERMINATED</div>
+            <div class="go-title">GAME OVER</div>
+            <div class="go-sub">Three strikes — the syndicate shut you down.</div>
+            <div class="go-stats">
+                <div class="go-stat"><span class="go-lbl">Days Survived</span><span class="go-val" id="go-days">1</span></div>
+                <div class="go-stat"><span class="go-lbl">Cash Remaining</span><span class="go-val go-gold" id="go-cash">$0</span></div>
+                <div class="go-stat"><span class="go-lbl">Street Cred</span><span class="go-val go-cyan" id="go-cred">0</span></div>
+                <div class="go-stat"><span class="go-lbl">Final Rank</span><span class="go-val go-pink" id="go-rank">ROOKIE</span></div>
+            </div>
+            <div class="go-buttons">
+                <button class="go-btn go-btn-primary" onclick="restartGame()">[ TRY AGAIN ]</button>
+                <button class="go-btn go-btn-exit" onclick="closeGame()">[ EXIT ]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Street Market Overlay ── -->
+    <div id="market-overlay" class="market-overlay">
+        <div class="market-modal">
+            <div class="market-title">[ STREET MARKET ]</div>
+            <div class="market-sub">Cash: <span id="mkt-cash-display">$0</span> — Buy to restock & upgrade</div>
+            <div class="market-grid" id="market-grid"></div>
+            <button class="market-close" onclick="closeMarket()">[ CLOSE ]</button>
         </div>
     </div>
 
