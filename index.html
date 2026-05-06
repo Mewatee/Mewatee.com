@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mewatee's Personal Space</title>
-    <link rel="icon" type="images/jpg" href="icon.jpg">
+    <link rel="icon" type="image/jpeg" href="icon.jpg">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -32,7 +32,7 @@
         <div class="logo-wrap">
             <canvas id="c"></canvas>
         </div>
-        <button class="btn-game" id="btnGame" onclick="openGame()">
+        <button class="btn-game" id="btnGame" onclick="startGameFlow()">
             <span class="bgc tl"></span>
             <span class="bgc tr"></span>
             <span class="bgc bl"></span>
@@ -277,6 +277,27 @@
             <div class="go-buttons">
                 <button class="go-btn go-btn-primary" onclick="restartGame()">[ TRY AGAIN ]</button>
                 <button class="go-btn go-btn-exit" onclick="closeGame()">[ EXIT ]</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Tutorial Overlay ── -->
+    <div id="tutorial-overlay" class="tutorial-overlay">
+        <div class="tut-modal">
+            <div class="tut-corner tut-tl"></div><div class="tut-corner tut-tr"></div>
+            <div class="tut-corner tut-bl"></div><div class="tut-corner tut-br"></div>
+            <div class="tut-header-row">
+                <div class="tut-brand">Meow-tropolis <span>// Field Manual</span></div>
+                <button class="tut-skip-btn" onclick="closeTutorial()">[SKIP]</button>
+            </div>
+            <canvas id="tut-canvas" width="320" height="200"></canvas>
+            <div class="tut-step-num" id="tutStepNum">STEP 1 / 5</div>
+            <div class="tut-title" id="tutTitle">MOVE YOUR CHARACTER</div>
+            <div class="tut-desc" id="tutDesc">Use WASD or arrow keys. Hold SHIFT to sprint — watch your stamina bar.</div>
+            <div class="tut-nav">
+                <button class="tut-nav-btn" id="tutPrevBtn" onclick="tutPrev()" disabled>◀ PREV</button>
+                <div class="tut-dots-wrap" id="tutDots"></div>
+                <button class="tut-nav-btn tut-nav-next" id="tutNextBtn" onclick="tutNext()">NEXT ▶</button>
             </div>
         </div>
     </div>

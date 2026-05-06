@@ -154,16 +154,25 @@ function onKey(e) {
 }
 
 let loginTime;
+let _uptimeInterval = null;
+let _pwAttempts = 0, _pwLockUntil = 0;
 
 async function submitPw() {
+    const now = Date.now();
+    if (now < _pwLockUntil) return; // rate-limited
     const val = document.getElementById('pwInput').value;
     if (!val) return;
     const h = await sha256(val);
     if (h === HASH) {
+        _pwAttempts = 0;
         loginTime = new Date();
         closeModal();
         openDash();
     } else {
+        _pwAttempts++;
+        // exponential back-off: 1s, 2s, 4s … capped at 30s
+        const delay = Math.min(30000, 1000 * Math.pow(2, _pwAttempts - 1));
+        _pwLockUntil = Date.now() + delay;
         const inp = document.getElementById('pwInput');
         inp.classList.add('err');
         document.getElementById('modalErr').classList.add('show');
@@ -182,7 +191,8 @@ function openDash() {
         'Logged in at ' + now.toTimeString().slice(0, 8);
     buildLog(now);
     updateUptime();
-    setInterval(updateUptime, 1000);
+    if (_uptimeInterval) clearInterval(_uptimeInterval);
+    _uptimeInterval = setInterval(updateUptime, 1000);
 }
 
 function lockDash() {
@@ -549,14 +559,16 @@ function updateAndDrawBoss(ctx,ts){
       if(G.invisible>0){b.state='search';b.searchTimer=80;}
       else if(b.chaseTimer<=0||dist>190){b.state='search';b.searchTimer=80;}
       // Boss catch = 2 strikes
-      if(dist<16&&G.spottedFlash===0){
+      if(dist<16&&G.spottedFlash===0&&G.safeZone===0){
         G.strikes+=2;
         const fine=Math.min(G.cash,120);G.cash-=fine;
         const mats=['reflectiveInk','neonDye','rareDenim','cyberThread'].filter(m=>G[m]>0);
         if(mats.length>0){const m=mats[Math.floor(Math.random()*mats.length)];G[m]--;if(mats.length>1){const m2=mats.filter(x=>x!==m)[0];G[m2]--;}}
         G.spottedFlash=80;shakeFrames=72;shakeAmp=16;
         spawnParticles(G.playerX,G.playerY,'#ff0000',32);
-        G.playerX=300;G.playerY=195;b.state='patrol';b.chaseTimer=0;
+        const bsp=currentMap?currentMap.playerStart:{x:300,y:195};
+        G.playerX=bsp.x;G.playerY=bsp.y;G.safeZone=180;
+        b.state='patrol';b.chaseTimer=0;
         updateGameHUD();updateMapUI();
         if(G.strikes>=3){setTimeout(()=>showGameOver(),1000);return;}
         setMapStatus(`★ BOSS CAUGHT YOU — -$${fine} -2 STRIKES [${3-G.strikes} left]`);
@@ -671,7 +683,7 @@ const G={
   stamina:100, comboStreak:0, guardsBribed:0,
   invisible:0, invisCooldown:0, invisUnlocked:false,
   slowAura:0, slowCooldown:0, slowUnlocked:false,
-  strikes:0, empActive:0, stunners:0, marketOpen:false, roundStartTimer:0,
+  strikes:0, empActive:0, stunners:0, marketOpen:false, roundStartTimer:0, safeZone:0,
 };
 
 const winDrops=Array.from({length:18},()=>({
@@ -721,15 +733,15 @@ function drawSkateboard(ctx, ox, oy, s) {
 function drawPixelSign(ctx, text, x, y, ps, color, glow) {
     if (glow) { ctx.shadowColor = glow; ctx.shadowBlur = 10; }
     ctx.fillStyle = color;
-    let cx = x;
+    let curX = x;
     for (let i = 0; i < text.length; i++) {
         const map = FONT[text[i]];
-        if (!map) { cx += 4 * ps; continue; }
+        if (!map) { curX += 4 * ps; continue; }
         const cw = map[0].length;
         for (let r = 0; r < 7; r++)
             for (let c = 0; c < cw; c++)
-                if (map[r][c]) ctx.fillRect(cx + c*ps, y + r*ps, ps, ps);
-        cx += (cw + 1) * ps;
+                if (map[r][c]) ctx.fillRect(curX + c*ps, y + r*ps, ps, ps);
+        curX += (cw + 1) * ps;
     }
     ctx.shadowBlur = 0;
 }
@@ -902,6 +914,7 @@ function setMapStatus(msg){
 
 // ── Map draw ───────────────────────────────────────────
 function drawMap(ctx,ts){
+  if(G.safeZone>0&&G.roundStartTimer===0) G.safeZone--;
   ctx.save();
   if(shakeFrames>0){shakeFrames--;shakeAmp*=0.88;ctx.translate((Math.random()-.5)*shakeAmp,(Math.random()-.5)*shakeAmp);}
   const CM=currentMap||MAP_DEFS[0];
@@ -930,6 +943,19 @@ function drawMap(ctx,ts){
     ctx.fillStyle='#2a2a3a';ctx.fillRect(lx-1,ly,2,SH);
     ctx.fillStyle=CM.lightPost;ctx.fillRect(lx-3,ly-2,6,4);
   });
+
+  // ── Spawn / Safe zone marker (always visible) ─────────
+  const SP=currentMap?currentMap.playerStart:{x:300,y:195};
+  const spPulse=0.35+Math.sin(ts*.004)*0.15;
+  ctx.save();
+  ctx.globalAlpha=spPulse*0.12;ctx.fillStyle='#00ff88';
+  ctx.beginPath();ctx.arc(SP.x,SP.y,20,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=spPulse*0.4;ctx.strokeStyle='#00ff88';ctx.lineWidth=1;ctx.setLineDash([3,5]);
+  ctx.beginPath();ctx.arc(SP.x,SP.y,20,0,Math.PI*2);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.globalAlpha=spPulse*0.7;ctx.fillStyle='#00ff88';ctx.font='bold 6px monospace';ctx.textAlign='center';
+  ctx.fillText('SPAWN',SP.x,SP.y+30);
+  ctx.restore();
 
   const SE=SHOP_ENTER;
   const sg=ctx.createRadialGradient(SE.x,SE.y,2,SE.x,SE.y,50);
@@ -1010,7 +1036,7 @@ function drawMap(ctx,ts){
       if(G.invisible>0){p.state='search';p.searchTimer=90;} // lost in ghost
       else if(p.chaseTimer<=0||dist>140){p.state='search';p.searchTimer=90;}
       // ── CAUGHT ────────────────────────────────────────
-      if(dist<14&&G.spottedFlash===0&&G.turns>0){
+      if(dist<14&&G.spottedFlash===0&&G.turns>0&&G.safeZone===0){
         G.turns=Math.max(0,G.turns-1);
         G.strikes++;
         const fine=Math.min(G.cash,60); G.cash-=fine;
@@ -1019,7 +1045,9 @@ function drawMap(ctx,ts){
         if(mats.length){const m=mats[Math.floor(Math.random()*mats.length)];G[m]--;dropped=m;}
         G.spottedFlash=65;shakeFrames=55;shakeAmp=13;
         spawnParticles(G.playerX,G.playerY,'#ff3535',26);
-        G.playerX=300;G.playerY=195; p.state='patrol';p.chaseTimer=0;
+        const rsp=currentMap?currentMap.playerStart:{x:300,y:195};
+        G.playerX=rsp.x;G.playerY=rsp.y;G.safeZone=180;
+        p.state='patrol';p.chaseTimer=0;
         updateGameHUD();updateMapUI();
         const remaining=3-G.strikes;
         if(G.strikes>=3){setTimeout(()=>showGameOver(),900);return;}
@@ -1097,6 +1125,29 @@ function drawMap(ctx,ts){
     ctx.save();ctx.globalAlpha=(G.spottedFlash/45)*0.4;ctx.fillStyle='#ff0000';ctx.fillRect(0,0,SW,SH);ctx.restore();
     G.spottedFlash--;
     ctx.save();ctx.fillStyle='#ff4444';ctx.font='bold 12px monospace';ctx.textAlign='center';ctx.fillText('!! SPOTTED !!',SW/2,SH/2);ctx.restore();
+  }
+
+  // ── Safe zone visual ──────────────────────────────────
+  if(G.safeZone>0&&G.roundStartTimer===0){
+    const szRatio=G.safeZone/180;
+    const szPulse=0.55+Math.sin(ts*.018)*.25;
+    const szR=30;
+    ctx.save();
+    ctx.globalAlpha=szRatio*0.18;ctx.fillStyle='#00ff88';
+    ctx.beginPath();ctx.arc(G.playerX,G.playerY,szR,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=szRatio*szPulse;ctx.strokeStyle='#00ff88';ctx.lineWidth=2;
+    ctx.setLineDash([4,4]);ctx.lineDashOffset=-(ts*.05%8);
+    ctx.beginPath();ctx.arc(G.playerX,G.playerY,szR,0,Math.PI*2);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.shadowColor='#00ff88';ctx.shadowBlur=12;
+    ctx.fillStyle='#00ff88';ctx.font='bold 7px monospace';ctx.textAlign='center';
+    ctx.globalAlpha=szRatio;ctx.fillText('SAFE ZONE',G.playerX,G.playerY-36);
+    // timer bar
+    ctx.shadowBlur=0;ctx.globalAlpha=0.4;ctx.fillStyle='rgba(0,0,0,.5)';
+    ctx.fillRect(G.playerX-18,G.playerY-44,36,3);
+    ctx.globalAlpha=szRatio;ctx.fillStyle='#00ff88';
+    ctx.fillRect(G.playerX-18,G.playerY-44,szRatio*36,3);
+    ctx.restore();
   }
 
   const ppx=Math.round(G.playerX)-8,ppy=Math.round(G.playerY)-8;
@@ -1521,7 +1572,7 @@ function startMap(){
   const CM=currentMap||MAP_DEFS[0];
   const bs=document.getElementById('game-brand-sub');if(bs)bs.textContent='// Day '+G.day+' — '+CM.name;
   const gs=document.getElementById('game-sub-line');if(gs)gs.textContent='// '+CM.subtitle+' — Boutique Mode Active';
-  G.roundStartTimer=180;floatTexts=[];
+  G.roundStartTimer=180;G.safeZone=180;floatTexts=[];
   updateMapUI();
   if(G.day>0&&G.day%5===0){
     spawnBoss();
@@ -1685,7 +1736,8 @@ function openGame(){
     playerDir:'down',playerMoving:false,spottedFlash:0,
     tees:3,reflectiveInk:1,neonDye:0,rareDenim:0,cyberThread:0,cash:200,cred:12,
     stamina:100,comboStreak:0,guardsBribed:0,invisible:0,invisCooldown:0,invisUnlocked:false,
-    slowAura:0,slowCooldown:0,slowUnlocked:false,strikes:0,empActive:0,stunners:2,marketOpen:false});
+    slowAura:0,slowCooldown:0,slowUnlocked:false,strikes:0,empActive:0,stunners:2,marketOpen:false,
+    safeZone:0});
   bossData=null;
   G.keys.clear();
   loadMap(0);
@@ -1729,6 +1781,428 @@ function startRain(canvas) {
     }
     if (gameRainId) cancelAnimationFrame(gameRainId);
     frame();
+}
+
+// =====================================================
+// TUTORIAL
+// =====================================================
+const TW=320,TH=200;
+let _tutAnimId=null,_tutStep=0;
+
+const TUT=[
+  {title:'MOVE YOUR CHARACTER',
+   desc:'WASD or arrow keys to move. Hold SHIFT to sprint — watch your stamina or you\'ll slow down.'},
+  {title:'AVOID THE GUARDS',
+   desc:'Guards patrol inside red circles. Get spotted: Alert → Chase → Caught = 1 strike & a cash fine.'},
+  {title:'SCAVENGE MATERIALS',
+   desc:'Walk up to glowing hotspots and press [E] to collect Ink, Dye, Denim & Thread for crafting.'},
+  {title:'ENTER SHOP & CRAFT',
+   desc:'Head to the green SHOP door and press [E]. Match what the customer wants for a PERFECT MATCH bonus.'},
+  {title:'SURVIVE THE STREETS',
+   desc:'3 strikes and it\'s game over. A boss spawns every 5 days. After dying, spawn inside the green safe zone.'},
+];
+
+function startGameFlow(){openTutorial();}
+
+function openTutorial(){
+  _tutStep=0;
+  const ov=document.getElementById('tutorial-overlay');
+  if(ov)ov.classList.add('active');
+  _updateTutSlide();
+  if(_tutAnimId)cancelAnimationFrame(_tutAnimId);
+  _tutFrame(performance.now());
+}
+
+function closeTutorial(){
+  const ov=document.getElementById('tutorial-overlay');
+  if(ov)ov.classList.remove('active');
+  if(_tutAnimId){cancelAnimationFrame(_tutAnimId);_tutAnimId=null;}
+  openGame();
+}
+
+function tutNext(){
+  if(_tutStep<TUT.length-1){_tutStep++;_updateTutSlide();}
+  else closeTutorial();
+}
+function tutPrev(){if(_tutStep>0){_tutStep--;_updateTutSlide();}}
+function tutJump(i){_tutStep=i;_updateTutSlide();}
+
+function _updateTutSlide(){
+  const s=TUT[_tutStep];
+  const el=id=>document.getElementById(id);
+  if(el('tutStepNum'))el('tutStepNum').textContent='STEP '+(_tutStep+1)+' / '+TUT.length;
+  if(el('tutTitle'))el('tutTitle').textContent=s.title;
+  if(el('tutDesc'))el('tutDesc').textContent=s.desc;
+  const nb=el('tutNextBtn');
+  if(nb){
+    nb.textContent=_tutStep===TUT.length-1?'[ START GAME ]':'NEXT ▶';
+    nb.className='tut-nav-btn'+(_tutStep===TUT.length-1?' tut-nav-start':' tut-nav-next');
+  }
+  const pb=el('tutPrevBtn');if(pb)pb.disabled=_tutStep===0;
+  const dots=el('tutDots');
+  if(dots)dots.innerHTML=TUT.map((_,i)=>
+    `<div class="tut-dot${i===_tutStep?' active':''}" onclick="tutJump(${i})"></div>`
+  ).join('');
+}
+
+function _tutFrame(ts){
+  const cv=document.getElementById('tut-canvas');
+  if(!cv){_tutAnimId=requestAnimationFrame(_tutFrame);return;}
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#06070f';ctx.fillRect(0,0,TW,TH);
+  ctx.strokeStyle='rgba(0,212,255,0.05)';ctx.lineWidth=1;
+  for(let x=0;x<TW;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,TH);ctx.stroke();}
+  for(let y=0;y<TH;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(TW,y);ctx.stroke();}
+  [_drawTutMove,_drawTutGuard,_drawTutScavenge,_drawTutShop,_drawTutSurvive][_tutStep](ctx,ts);
+  _tutAnimId=requestAnimationFrame(_tutFrame);
+}
+
+function _tKey(ctx,x,y,label,active){
+  ctx.save();ctx.globalAlpha=active?1:0.22;
+  ctx.strokeStyle=active?'#00d4ff':'#333';
+  ctx.fillStyle=active?'rgba(0,212,255,0.15)':'rgba(255,255,255,0.03)';
+  ctx.lineWidth=1;ctx.fillRect(x-10,y-10,20,20);ctx.strokeRect(x-10,y-10,20,20);
+  if(active){ctx.shadowColor='#00d4ff';ctx.shadowBlur=10;}
+  ctx.fillStyle=active?'#00d4ff':'#555';ctx.font='bold 9px monospace';ctx.textAlign='center';
+  ctx.fillText(label,x,y+4);ctx.restore();
+}
+function _tLbl(ctx,text,x,y,col='rgba(0,212,255,0.4)'){
+  ctx.save();ctx.fillStyle=col;ctx.font='8px monospace';ctx.textAlign='center';ctx.fillText(text,x,y);ctx.restore();
+}
+
+// ── Slide 1: Move ──────────────────────────────────────
+function _drawTutMove(ctx,ts){
+  const t=(ts%4000)/4000;
+  let px, goRight=true, moving=true;
+  if(t<0.42){px=40+(t/0.42)*240;}
+  else if(t<0.52){px=280; moving=false;}
+  else if(t<0.94){px=280-((t-0.52)/0.42)*240; goRight=false;}
+  else{px=40; moving=false; goRight=false;}
+  const frame=moving?Math.floor(ts/180)%2:0;
+  const py=122;
+
+  // WASD cluster (left)
+  const kx=80, ky=46;
+  _tKey(ctx,kx,    ky-22,'W',false);
+  _tKey(ctx,kx-22, ky,   'A',moving&&!goRight);
+  _tKey(ctx,kx,    ky,   'S',false);
+  _tKey(ctx,kx+22, ky,   'D',moving&&goRight);
+  _tLbl(ctx,'WASD',kx,ky+18,'rgba(0,212,255,0.35)');
+
+  // Arrow keys (right)
+  const ax=240, ay=46;
+  _tKey(ctx,ax,    ay-22,'▲',false);
+  _tKey(ctx,ax-22, ay,   '◄',moving&&!goRight);
+  _tKey(ctx,ax,    ay,   '▼',false);
+  _tKey(ctx,ax+22, ay,   '►',moving&&goRight);
+  _tLbl(ctx,'ARROWS',ax,ay+18,'rgba(0,212,255,0.35)');
+
+  // SHIFT bar (center)
+  ctx.save();ctx.globalAlpha=0.28;ctx.strokeStyle='#00d4ff';ctx.fillStyle='rgba(0,212,255,0.06)';
+  ctx.lineWidth=1;ctx.fillRect(TW/2-42,ky-10,82,16);ctx.strokeRect(TW/2-42,ky-10,82,16);
+  ctx.fillStyle='rgba(0,212,255,0.5)';ctx.font='bold 7px monospace';ctx.textAlign='center';
+  ctx.fillText('SHIFT — SPRINT',TW/2,ky+3);ctx.restore();
+
+  // Ground track
+  ctx.save();ctx.strokeStyle='rgba(0,212,255,0.07)';ctx.lineWidth=1;
+  ctx.setLineDash([4,8]);ctx.beginPath();ctx.moveTo(20,py+12);ctx.lineTo(TW-20,py+12);ctx.stroke();
+  ctx.setLineDash([]);ctx.restore();
+
+  // Motion trail
+  if(moving){
+    for(let i=1;i<=5;i++){
+      const tx=px-(goRight?1:-1)*(i*9);
+      ctx.save();ctx.globalAlpha=0.18-i*0.03;ctx.fillStyle='#00d4ff';
+      ctx.beginPath();ctx.arc(tx,py+2,2.5,0,Math.PI*2);ctx.fill();ctx.restore();
+    }
+  }
+
+  drawPlayerTop(ctx,Math.round(px)-8,py-8,2,PAL.player,frame);
+  _tLbl(ctx,'YOU',px,py-18,'rgba(200,164,106,0.9)');
+  _tLbl(ctx,'WASD or Arrow Keys to move  ·  SHIFT to sprint',TW/2,TH-8,'rgba(0,212,255,0.5)');
+}
+
+// ── Slide 2: Guards ────────────────────────────────────
+function _drawTutGuard(ctx,ts){
+  const t=(ts%5000)/5000;
+  const RANGE=50;
+
+  const patrolPhase  = t<0.28;
+  const approachPhase= t>=0.28&&t<0.62;
+  const caughtPhase  = t>=0.62&&t<0.82;
+
+  // Guard: patrols then holds at x=165
+  let gx, gy=96;
+  if(patrolPhase) gx=Math.round(90+(t/0.28)*75);
+  else gx=165;
+
+  // Player: stands at right, then walks left into patrol zone
+  let px=275, py=96;
+  if(approachPhase) px=Math.round(275-((t-0.28)/0.34)*210);
+  else if(caughtPhase) px=65;
+
+  const dist=Math.hypot(px-gx,py-gy);
+  const spotted=approachPhase&&dist<RANGE+22;
+  const chasing=approachPhase&&dist<RANGE;
+
+  // Patrol path hint
+  if(patrolPhase){
+    ctx.save();ctx.strokeStyle='rgba(255,80,80,0.1)';ctx.lineWidth=1;
+    ctx.setLineDash([3,8]);ctx.beginPath();ctx.moveTo(60,gy);ctx.lineTo(TW-60,gy);ctx.stroke();
+    ctx.setLineDash([]);ctx.restore();
+  }
+
+  // Vision circle
+  const vcCol=caughtPhase?'#ff6600':chasing?'#ff0000':'#ff4444';
+  ctx.save();
+  ctx.globalAlpha=(caughtPhase?0.28:chasing?0.22:0.07)*(0.9+Math.sin(ts*0.01)*0.1);
+  ctx.fillStyle=vcCol;ctx.beginPath();ctx.arc(gx,gy,RANGE,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=caughtPhase?0.9:chasing?0.8:0.28;ctx.strokeStyle=vcCol;
+  ctx.lineWidth=chasing||caughtPhase?2:1;
+  if(!chasing&&!caughtPhase)ctx.setLineDash([4,6]);
+  ctx.beginPath();ctx.arc(gx,gy,RANGE,0,Math.PI*2);ctx.stroke();
+  ctx.setLineDash([]);ctx.restore();
+
+  // Guard sprite
+  const gc=caughtPhase?'#ff6600':chasing?'#ff1111':'#cc2222';
+  ctx.fillStyle=gc;ctx.fillRect(gx-5,gy-5,10,10);
+  ctx.fillStyle='#fff';ctx.fillRect(gx-4,gy-4,3,2);ctx.fillRect(gx+1,gy-4,3,2);
+  ctx.fillStyle=caughtPhase?'#ff8800':chasing?'#ff4400':'#881111';ctx.fillRect(gx-2,gy+1,4,3);
+  _tLbl(ctx,'GUARD',gx,gy-14,'rgba(255,80,80,0.8)');
+
+  // State label
+  if(caughtPhase){
+    ctx.save();ctx.fillStyle='#ff8800';ctx.font='bold 9px monospace';ctx.textAlign='center';
+    ctx.shadowColor='#ff6600';ctx.shadowBlur=10;ctx.fillText('!! STOP!',gx,gy-25);ctx.restore();
+  } else if(chasing){
+    ctx.save();ctx.fillStyle='#ff2222';ctx.font='bold 9px monospace';ctx.textAlign='center';
+    ctx.shadowColor='#ff0000';ctx.shadowBlur=10;ctx.fillText('!! CHASING',gx,gy-25);ctx.restore();
+  } else if(spotted){
+    ctx.save();ctx.fillStyle='#ffcc00';ctx.font='bold 9px monospace';ctx.textAlign='center';
+    ctx.shadowColor='#ffaa00';ctx.shadowBlur=8;ctx.fillText('! SPOTTED',gx,gy-25);ctx.restore();
+  } else if(patrolPhase){
+    ctx.save();ctx.fillStyle='rgba(255,80,80,0.35)';ctx.font='7px monospace';ctx.textAlign='center';
+    ctx.fillText('PATROLLING',gx,gy-25);ctx.restore();
+  }
+
+  // Player (hide during caught phase)
+  if(!caughtPhase){
+    drawPlayerTop(ctx,Math.round(px)-8,py-8,2,PAL.player,approachPhase?Math.floor(ts/180)%2:0);
+    _tLbl(ctx,'YOU',px,py-18,'rgba(200,164,106,0.9)');
+  }
+
+  // Caught result panel
+  if(caughtPhase){
+    const fade=Math.min(1,(t-0.62)*12)*Math.min(1,(0.82-t)*12);
+    ctx.save();ctx.globalAlpha=fade;
+    ctx.fillStyle='rgba(0,0,0,0.9)';ctx.strokeStyle='#ff3535';ctx.lineWidth=1;
+    ctx.fillRect(TW/2-74,gy-30,148,54);ctx.strokeRect(TW/2-74,gy-30,148,54);
+    ctx.fillStyle='#ff3535';ctx.font='bold 14px monospace';ctx.textAlign='center';
+    ctx.shadowColor='#ff0000';ctx.shadowBlur=16;ctx.fillText('CAUGHT!',TW/2,gy-8);
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(255,180,180,0.8)';ctx.font='8px monospace';
+    ctx.fillText('–$50 FINE  ·  1 STRIKE ADDED',TW/2,gy+9);ctx.restore();
+  }
+
+  _tLbl(ctx,'Avoid red patrol zones — caught = cash fine + 1 strike',TW/2,TH-8,'rgba(0,212,255,0.5)');
+}
+
+// ── Slide 3: Scavenge ──────────────────────────────────
+function _drawTutScavenge(ctx,ts){
+  const t=(ts%3600)/3600;
+  const hx=160, hy=100;
+  const pulse=0.55+Math.sin(ts*0.006)*0.45;
+
+  // Secondary hotspots (subtle background context)
+  [{x:72,y:68,col:'#ff00aa',lbl:'NEO DYE'},{x:264,y:124,col:'#ffaa22',lbl:'DENIM'}].forEach(h=>{
+    const ep=0.35+Math.sin(ts*0.004+h.x)*0.25;
+    ctx.save();ctx.globalAlpha=ep*0.45;ctx.fillStyle=h.col;
+    ctx.beginPath();ctx.arc(h.x,h.y,5,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=ep*0.7;ctx.strokeStyle=h.col;ctx.lineWidth=1;
+    ctx.beginPath();ctx.arc(h.x,h.y,8,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle=h.col;ctx.font='5px monospace';ctx.textAlign='center';
+    ctx.fillText(h.lbl,h.x,h.y-12);ctx.restore();
+  });
+
+  // Main hotspot (center)
+  ctx.save();ctx.shadowColor='#00d4ff';ctx.shadowBlur=12;
+  ctx.globalAlpha=pulse*0.28;ctx.fillStyle='#00d4ff';
+  ctx.beginPath();ctx.arc(hx,hy,18,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=pulse;ctx.strokeStyle='#00d4ff';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(hx,hy,10,0,Math.PI*2);ctx.stroke();ctx.restore();
+  _tLbl(ctx,'DUMPSTER',hx,hy-22,'rgba(0,212,255,0.9)');
+
+  // Player walks toward hotspot
+  let px;
+  const py=100;
+  if(t<0.40) px=Math.round(30+(t/0.40)*(hx-50));
+  else px=hx-18;
+  drawPlayerTop(ctx,px-8,py-8,2,PAL.player,t<0.40?Math.floor(ts/180)%2:0);
+  _tLbl(ctx,'YOU',px,py-18,'rgba(200,164,106,0.9)');
+
+  // [E] prompt when near
+  if(t>0.36&&Math.hypot(px+8-hx,py-hy)<42){
+    const ep=0.7+Math.sin(ts*0.022)*0.3;
+    ctx.save();ctx.globalAlpha=ep;
+    ctx.strokeStyle='#ffffff';ctx.fillStyle='rgba(255,255,255,0.14)';ctx.lineWidth=1;
+    ctx.fillRect(hx-13,hy+13,26,16);ctx.strokeRect(hx-13,hy+13,26,16);
+    ctx.fillStyle='#ffffff';ctx.font='bold 9px monospace';ctx.textAlign='center';
+    ctx.shadowColor='#fff';ctx.shadowBlur=6;ctx.fillText('[E]',hx,hy+24);ctx.restore();
+  }
+
+  // Burst particles
+  if(t>0.42&&t<0.68){
+    const prog=(t-0.42)/0.26;
+    for(let i=0;i<8;i++){
+      const a=(Math.PI*2/8)*i, r=prog*38;
+      ctx.save();ctx.globalAlpha=(1-prog)*0.9;ctx.fillStyle='#00d4ff';
+      ctx.beginPath();ctx.arc(hx+Math.cos(a)*r,hy+Math.sin(a)*r,2.5,0,Math.PI*2);ctx.fill();ctx.restore();
+    }
+  }
+
+  // Float text
+  if(t>0.44&&t<0.76){
+    const prog=(t-0.44)/0.32;
+    const alpha=Math.min(1,(t-0.44)*14)*Math.min(1,(0.76-t)*8);
+    ctx.save();ctx.globalAlpha=alpha;
+    ctx.fillStyle='#00d4ff';ctx.font='bold 11px monospace';ctx.textAlign='center';
+    ctx.shadowColor='#00d4ff';ctx.shadowBlur=12;
+    ctx.fillText('+ REFLECTIVE INK',hx,hy-22-prog*32);ctx.restore();
+  }
+
+  _tLbl(ctx,'Press [E] near glowing hotspots to collect crafting materials',TW/2,TH-8,'rgba(0,212,255,0.5)');
+}
+
+// ── Slide 4: Shop & Craft ──────────────────────────────
+function _drawTutShop(ctx,ts){
+  const t=(ts%5000)/5000;
+
+  // Shop door (right side)
+  const sx=258, sy=100;
+  const sg=ctx.createRadialGradient(sx,sy,2,sx,sy,34);
+  sg.addColorStop(0,'rgba(0,255,136,0.18)');sg.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=sg;ctx.fillRect(sx-34,sy-34,68,68);
+  ctx.fillStyle='#091a0f';ctx.fillRect(sx-10,sy-22,20,24);
+  ctx.strokeStyle='#00ff88';ctx.lineWidth=2;ctx.strokeRect(sx-10,sy-22,20,24);
+  ctx.save();ctx.fillStyle='#00ff88';ctx.font='bold 7px monospace';ctx.textAlign='center';
+  ctx.shadowColor='#00ff88';ctx.shadowBlur=8;ctx.fillText('SHOP',sx,sy-7);ctx.restore();
+
+  // Player walks to shop
+  const walking=t<0.30;
+  let px=40;
+  if(t<0.30) px=Math.round(40+(t/0.30)*(sx-62));
+  else px=sx-22;
+
+  if(t<0.55){
+    drawPlayerTop(ctx,px-8,100-8,2,PAL.player,walking?Math.floor(ts/180)%2:0);
+    _tLbl(ctx,'YOU',px,82,'rgba(200,164,106,0.9)');
+    if(!walking&&t<0.50){
+      ctx.save();ctx.fillStyle='#00ff88';ctx.font='bold 8px monospace';ctx.textAlign='center';
+      ctx.shadowColor='#00ff88';ctx.shadowBlur=8;ctx.fillText('[E] ENTER',sx,sy+22);ctx.restore();
+    }
+  }
+
+  // Customer walks in from the right
+  if(t>0.44){
+    const cprog=Math.min(1,(t-0.44)/0.28);
+    const cust=CUSTOMERS[2];
+    const custX=TW+8-cprog*175;
+    if(custX<TW-2){
+      drawPixelCat(ctx,Math.round(custX)-12,68,3,cust.pal,Math.floor(ts/220)%2);
+      _tLbl(ctx,'CUSTOMER',custX,62,'rgba(255,200,100,0.8)');
+    }
+    // Style preference bubble
+    if(cprog>0.80&&custX<TW-2){
+      const bx=Math.min(custX,TW-92), by=52;
+      ctx.save();
+      ctx.fillStyle='rgba(0,0,0,0.85)';ctx.strokeStyle=cust.pal.eyeS;ctx.lineWidth=1;
+      ctx.fillRect(bx-46,by-14,92,16);ctx.strokeRect(bx-46,by-14,92,16);
+      ctx.fillStyle='rgba(255,255,255,0.65)';ctx.font='6px monospace';ctx.textAlign='center';
+      ctx.fillText('Vibe: CLEAN  ·  MINIMAL',bx,by-2);ctx.restore();
+    }
+  }
+
+  // Craft result popup
+  if(t>0.70){
+    const fade=Math.min(1,(t-0.70)*5)*Math.min(1,(1-t)*6+0.25);
+    ctx.save();ctx.globalAlpha=fade;
+    ctx.fillStyle='rgba(0,0,0,0.9)';ctx.strokeStyle='rgba(0,255,136,0.5)';ctx.lineWidth=1;
+    ctx.fillRect(TW/2-62,TH/2-30,124,58);ctx.strokeRect(TW/2-62,TH/2-30,124,58);
+    ctx.fillStyle='#00ff88';ctx.font='bold 22px monospace';ctx.textAlign='center';
+    ctx.shadowColor='#00ff88';ctx.shadowBlur=18;ctx.fillText('+$280',TW/2,TH/2+4);
+    ctx.shadowBlur=0;ctx.fillStyle='rgba(0,212,255,0.85)';ctx.font='7px monospace';
+    ctx.fillText('PERFECT MATCH  +22 CRED',TW/2,TH/2+18);ctx.restore();
+  }
+
+  _tLbl(ctx,'Walk to green SHOP · [E] to enter · match customer style for bonus',TW/2,TH-8,'rgba(0,212,255,0.5)');
+}
+
+// ── Slide 5: Survive ───────────────────────────────────
+function _drawTutSurvive(ctx,ts){
+  const t=(ts%5200)/5200;
+
+  // Left: Strikes
+  const strikes=Math.min(3,Math.floor(t*4.2));
+  const sdx=72, sdy=54;
+  _tLbl(ctx,'STRIKES',sdx,sdy-26,'rgba(255,255,255,0.25)');
+  for(let i=0;i<3;i++){
+    const lit=i<strikes;
+    ctx.save();
+    if(lit){ctx.fillStyle='#ff3535';ctx.shadowColor='#ff3535';ctx.shadowBlur=14;
+      ctx.beginPath();ctx.arc(sdx-22+i*22,sdy,9,0,Math.PI*2);ctx.fill();}
+    else{ctx.strokeStyle='rgba(255,255,255,0.18)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(sdx-22+i*22,sdy,9,0,Math.PI*2);ctx.stroke();}
+    ctx.restore();
+  }
+  if(strikes===3){
+    const fade=Math.min(1,(t-0.70)*12);
+    ctx.save();ctx.globalAlpha=fade;ctx.fillStyle='#ff3535';ctx.font='bold 11px monospace';
+    ctx.textAlign='center';ctx.shadowColor='#ff0000';ctx.shadowBlur=14;
+    ctx.fillText('GAME OVER',sdx,sdy+26);ctx.restore();
+  }
+
+  // Center: Safe zone + player
+  const szx=162, szy=142;
+  const szPulse=0.45+Math.sin(ts*0.015)*0.3;
+  ctx.save();
+  ctx.globalAlpha=0.12;ctx.fillStyle='#00ff88';ctx.beginPath();ctx.arc(szx,szy,26,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=szPulse*0.55;ctx.strokeStyle='#00ff88';ctx.lineWidth=1.5;ctx.setLineDash([3,5]);
+  ctx.beginPath();ctx.arc(szx,szy,26,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+  ctx.globalAlpha=0.75;ctx.fillStyle='#00ff88';ctx.font='bold 7px monospace';ctx.textAlign='center';
+  ctx.fillText('SAFE ZONE',szx,szy+38);ctx.restore();
+  drawPlayerTop(ctx,szx-8,szy-8,2,PAL.player,0);
+  _tLbl(ctx,'YOU',szx,szy-18,'rgba(200,164,106,0.9)');
+
+  // Right: Boss
+  const bx=258, by=72;
+  const bPulse=0.88+Math.sin(ts*0.009)*0.12;
+  ctx.save();ctx.shadowColor='#ff0033';ctx.shadowBlur=12*bPulse;
+  ctx.fillStyle='#1a0000';ctx.fillRect(bx-7,by-7,14,14);
+  ctx.fillStyle='#ff1111';ctx.fillRect(bx-6,by-6,3,3);ctx.fillRect(bx+3,by-6,3,3);
+  ctx.fillStyle='#ff3300';ctx.fillRect(bx-3,by+1,6,4);ctx.restore();
+  ctx.save();ctx.fillStyle='#ffd700';ctx.font='bold 9px monospace';ctx.textAlign='center';
+  ctx.shadowColor='#ffd700';ctx.shadowBlur=10;ctx.fillText('★ BOSS',bx,by-16);
+  ctx.shadowBlur=0;ctx.fillStyle='rgba(255,80,80,0.65)';ctx.font='7px monospace';
+  ctx.fillText('every 5 days',bx,by-4);ctx.restore();
+  ctx.save();ctx.globalAlpha=0.07*(0.9+Math.sin(ts*0.007)*0.1);ctx.fillStyle='#cc0033';
+  ctx.beginPath();ctx.arc(bx,by,48,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=0.25;ctx.strokeStyle='#cc0033';ctx.lineWidth=1;ctx.setLineDash([5,7]);
+  ctx.beginPath();ctx.arc(bx,by,48,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+
+  // Day ticker (below boss)
+  const dayNum=Math.floor(t*7)+1;
+  ctx.save();
+  ctx.fillStyle=dayNum%5===0?'#ff3535':'rgba(0,212,255,0.5)';
+  ctx.font='bold 8px monospace';ctx.textAlign='center';
+  ctx.shadowColor=dayNum%5===0?'#ff0000':'transparent';
+  ctx.shadowBlur=dayNum%5===0?8:0;
+  ctx.fillText('DAY '+dayNum+(dayNum%5===0?' — BOSS!':''),bx,by+56);ctx.restore();
+
+  // Divider
+  ctx.save();ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+  ctx.setLineDash([3,7]);ctx.beginPath();ctx.moveTo(TW/2,22);ctx.lineTo(TW/2,TH-22);ctx.stroke();
+  ctx.setLineDash([]);ctx.restore();
+
+  _tLbl(ctx,'3 strikes = game over · boss every 5 days · respawn in green zone',TW/2,TH-8,'rgba(0,212,255,0.5)');
 }
 
 function buildLog(now) {
