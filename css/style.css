@@ -1222,3 +1222,113 @@ canvas#c {
     background: var(--cyan); border-color: var(--cyan);
     box-shadow: 0 0 8px rgba(0,212,255,.6);
 }
+
+/* ── Projects Overlay ── */
+.projects-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(4,5,12,.97);
+    backdrop-filter: blur(16px);
+    flex-direction: column;
+    z-index: 70;
+}
+.projects-overlay.active { display: flex; animation: dash-in .35s ease; }
+
+.projects-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 32px 20px;
+    border-bottom: 1px solid rgba(0,212,255,.1);
+    flex-shrink: 0;
+}
+.projects-brand {
+    color: var(--cyan); font-size: 13px; letter-spacing: 5px; text-transform: uppercase;
+    font-family: 'Courier New', monospace;
+}
+.projects-brand span { color: rgba(255,255,255,.2); font-size: 11px; letter-spacing: 2px; }
+.projects-sub {
+    color: rgba(255,255,255,.22); font-size: 9px; letter-spacing: 3px;
+    font-family: 'Courier New', monospace; margin-top: 5px; text-transform: uppercase;
+}
+.btn-projects-close {
+    background: transparent; border: 1px solid rgba(255,255,255,.12);
+    color: rgba(255,255,255,.35); font-family: 'Courier New', monospace;
+    font-size: 9px; letter-spacing: 3px; cursor: pointer; outline: none;
+    padding: 9px 20px; transition: all .2s; text-transform: uppercase;
+}
+.btn-projects-close:hover { border-color: rgba(255,255,255,.4); color: rgba(255,255,255,.7); }
+
+.projects-body {
+    flex: 1; overflow-y: auto; padding: 36px 32px;
+}
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.proj-card {
+    position: relative;
+    background: rgba(8,10,22,.85);
+    border: 1px solid rgba(0,212,255,.14);
+    padding: 22px 22px 20px;
+    display: flex; flex-direction: column; gap: 0;
+    transition: border-color .25s, background .25s, transform .25s, box-shadow .25s;
+}
+.proj-live { cursor: pointer; }
+.proj-live:hover {
+    border-color: rgba(0,212,255,.48);
+    background: rgba(0,212,255,.03);
+    box-shadow: 0 0 36px rgba(0,212,255,.1);
+    transform: translateY(-3px);
+}
+.proj-soon { opacity: .45; cursor: not-allowed; }
+
+.proj-card-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+}
+.proj-card-tags { display: flex; gap: 6px; }
+.proj-tag {
+    font-size: 7px; letter-spacing: 3px; color: rgba(0,212,255,.5);
+    border: 1px solid rgba(0,212,255,.2); padding: 3px 8px;
+    font-family: 'Courier New', monospace; text-transform: uppercase;
+}
+.proj-status {
+    font-size: 7px; letter-spacing: 3px; padding: 3px 9px;
+    border: 1px solid; font-family: 'Courier New', monospace; text-transform: uppercase;
+}
+.proj-status-live  { color: #00ff88; border-color: rgba(0,255,136,.35); }
+.proj-status-soon  { color: rgba(255,255,255,.25); border-color: rgba(255,255,255,.1); }
+
+.proj-card-title {
+    color: var(--cyan); font-size: 16px; letter-spacing: 4px;
+    text-transform: uppercase; margin-bottom: 4px;
+    font-family: 'Courier New', monospace;
+}
+.proj-card-sub {
+    color: rgba(255,255,255,.28); font-size: 8px; letter-spacing: 3px;
+    text-transform: uppercase; margin-bottom: 12px;
+    font-family: 'Courier New', monospace;
+}
+.proj-card-desc {
+    color: rgba(255,255,255,.42); font-size: 10px;
+    line-height: 1.85; letter-spacing: .3px;
+    margin-bottom: 20px; flex: 1;
+}
+.proj-card-action { margin-top: auto; }
+.proj-play {
+    color: #00ff88; font-size: 9px; letter-spacing: 4px;
+    border: 1px solid rgba(0,255,136,.3); padding: 7px 18px;
+    font-family: 'Courier New', monospace; text-transform: uppercase;
+    transition: all .2s; display: inline-block;
+}
+.proj-live:hover .proj-play {
+    background: rgba(0,255,136,.08);
+    border-color: rgba(0,255,136,.6);
+    box-shadow: 0 0 14px rgba(0,255,136,.2);
+}
+.proj-wip {
+    color: rgba(255,255,255,.18); font-size: 9px; letter-spacing: 3px;
+    font-family: 'Courier New', monospace;
+}

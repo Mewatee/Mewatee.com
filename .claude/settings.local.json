@@ -6,7 +6,9 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\TUF\\\\OneDrive\\\\Desktop\\\\Projects\\\\Mewatee\" -Recurse -File)",
       "Bash(Select-Object FullName)",
       "Bash(mkdir \"C:\\\\Users\\\\TUF\\\\OneDrive\\\\Desktop\\\\Projects\\\\Mewatee\\\\css\")",
-      "Bash(mkdir \"C:\\\\Users\\\\TUF\\\\OneDrive\\\\Desktop\\\\Projects\\\\Mewatee\\\\js\")"
+      "Bash(mkdir \"C:\\\\Users\\\\TUF\\\\OneDrive\\\\Desktop\\\\Projects\\\\Mewatee\\\\js\")",
+      "Bash(sed -n '210,2207p' C:/Users/TUF/OneDrive/Desktop/Projects/Mewatee/js/main.js)",
+      "Read(//tmp/**)"
     ]
   }
 }
