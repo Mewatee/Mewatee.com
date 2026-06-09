@@ -9,11 +9,12 @@ const FONT = {
     'T': [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
     '.': [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,1,0]],
     'C': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,1],[0,1,1,1,0]],
-    'O': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]]
+    'O': [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    'D': [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0]],
 };
 
-const L1 = 'MEWATEE', L2 = '.COM';
-const CHAR_GAP = 2, GAP = 2, PAD = 20, LINE_GAP = 3;
+const L1 = 'MEWATEE';
+const CHAR_GAP = 2, GAP = 2, PAD = 20;
 
 function lineUnits(t) {
     let w = 0;
@@ -24,12 +25,12 @@ function lineUnits(t) {
     return w;
 }
 
-const W1 = lineUnits(L1), W2 = lineUnits(L2);
+const W1 = lineUnits(L1);
 const avail = Math.max(280, window.innerWidth - 60);
 const STEP  = Math.min(14, Math.max(7, Math.floor((avail - PAD * 2 + GAP) / W1)));
 const PIXEL = STEP - GAP;
 const CW = PAD * 2 + W1 * STEP - GAP;
-const CH = PAD * 2 + 7 * STEP - GAP + LINE_GAP * STEP + 7 * STEP - GAP;
+const CH = PAD * 2 + 7 * STEP - GAP;
 
 const cv = document.getElementById('c'), cx = cv.getContext('2d');
 cv.width = CW; cv.height = CH;
@@ -73,7 +74,6 @@ function drawLine(text, xOff, yTop, ts) {
 function draw(ts) {
     cx.clearRect(0, 0, CW, CH);
     drawLine(L1, PAD, PAD, ts);
-    drawLine(L2, PAD + Math.round((W1 - W2) / 2) * STEP, PAD + (7 + LINE_GAP) * STEP, ts);
     cx.shadowBlur = 0; cx.globalAlpha = 1;
     requestAnimationFrame(draw);
 }
@@ -232,9 +232,18 @@ const PROJECTS = [
         id: 'meow-tropolis',
         title: 'MEOW-TROPOLIS',
         sub: 'Streetwear Simulation',
-        desc: 'Scavenge materials, craft gear, and sell to customers in a neon cat city. Dodge guards, build street cred, survive the syndicate.',
-        tags: ['GAME', 'PIXEL ART'],
+        desc: 'boom boom.',
+        tags: ['GAME', 'PIXEL ART','VIBE CODED'],
         status: 'LIVE',
+    },
+    {
+        id: 'cake-waen',
+        title: 'CAKE',
+        sub: 'Vibe-coded Web App',
+        desc: 'cake cake.',
+        tags: ['VIBE CODED'],
+        status: 'LIVE',
+        url: 'https://cake-waen-2.vercel.app/',
     },
 ];
 
@@ -269,6 +278,12 @@ function _buildProjectsGrid() {
 }
 
 function launchProject(id) {
+    const p = PROJECTS.find(x => x.id === id);
+    if (!p) return;
     closeProjects();
-    if (id === 'meow-tropolis') startGameFlow();
+    if (p.url) {
+        window.open(p.url, '_blank', 'noopener');
+    } else if (id === 'meow-tropolis') {
+        startGameFlow();
+    }
 }
