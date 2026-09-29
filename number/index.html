@@ -30,7 +30,7 @@
     .status-pixel{width:13px;height:13px;background:#ad99a6;border:2px solid var(--line)}
     .is-running .status-pixel{background:#79d7b1}
     .countdown{font-variant-numeric:tabular-nums;white-space:nowrap}
-    .board-main{min-height:300px;display:grid;grid-template-columns:minmax(0,1fr) 242px;align-items:center;gap:10px;padding:10px 25px 2px 42px}
+    .board-main{min-height:260px;display:grid;grid-template-columns:minmax(0,1fr) 242px;align-items:center;gap:10px;padding:10px 25px 2px 42px}
     .number-area{text-align:center;min-width:0}
     .number-label{font-family:"Courier New",monospace;font-size:.9rem;font-weight:800;color:var(--soft);margin:0 0 4px}
     .number{font-family:"Arial Black","Trebuchet MS",sans-serif;font-size:clamp(7rem,18vw,12.5rem);font-weight:900;line-height:1;letter-spacing:-.065em;font-variant-numeric:tabular-nums;white-space:nowrap;text-shadow:6px 6px 0 #f7d9e4;user-select:none}
@@ -39,7 +39,7 @@
     .cat-cake{display:block;width:100%;max-width:242px;height:auto;image-rendering:pixelated;align-self:end;margin:0 auto 6px;filter:drop-shadow(4px 6px 0 #e8c7b8)}
     .progress-track{height:15px;background:#f8dce1;border-top:3px solid var(--line)}
     .progress-fill{height:100%;width:100%;background:var(--pink-dark);transform-origin:left;transform:scaleX(1)}
-    .below{display:grid;grid-template-columns:1fr auto;gap:18px;margin-top:28px;align-items:start}
+    .below{display:flex;flex-direction:column;align-items:center;gap:17px;margin-top:24px}
     .actions{display:flex;flex-wrap:wrap;gap:11px}
     .button{min-height:48px;padding:9px 16px;border:3px solid var(--line);border-radius:0;background:#fffefa;color:var(--ink);box-shadow:4px 4px 0 var(--line);font-family:"Courier New",monospace;font-size:.95rem;font-weight:900;transition:transform .12s,box-shadow .12s}
     .button:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--line)}
@@ -48,14 +48,16 @@
     .button.next{background:var(--yellow)}
     .button[aria-pressed="false"]{color:var(--soft);background:#f2e9e7}
     .button:disabled{opacity:.55;cursor:not-allowed}
-    .settings{display:flex;align-items:center;gap:14px;min-height:48px;white-space:nowrap;font-family:"Courier New",monospace;font-weight:900;font-size:.91rem}
+    .settings{display:flex;align-items:center;flex-wrap:wrap;justify-content:center;gap:14px;min-height:48px;white-space:nowrap;font-family:"Courier New",monospace;font-weight:900;font-size:.91rem}
     .setting{display:flex;align-items:center;gap:8px}
     .settings input{width:74px;min-height:48px;padding:6px 8px;border:3px solid var(--line);border-radius:0;background:#fffefa;color:var(--ink);font-family:"Courier New",monospace;font-weight:900;font-size:1.05rem;text-align:center;box-shadow:4px 4px 0 var(--line)}
     .settings select{min-height:48px;padding:6px 10px;border:3px solid var(--line);border-radius:0;background:#fffefa;color:var(--ink);font-family:"Courier New",monospace;font-weight:900;font-size:.95rem;box-shadow:4px 4px 0 var(--line)}
     .helper{color:var(--soft);font-size:.93rem;line-height:1.5;margin:19px 0 0;text-align:center}
+    .range-error{color:#a83260;margin-top:8px}
+    .range-error[hidden]{display:none}
     footer{text-align:center;font-size:.86rem;color:var(--soft);padding-top:20px}
-    @media(max-width:850px){.below{grid-template-columns:1fr}.settings{justify-content:center}.actions{justify-content:center}}
-    @media(max-width:580px){.shell{padding:19px 15px 25px}.brand{font-size:.96rem}.brand-icon{width:36px;height:36px}.range{font-size:.76rem;padding:8px}main{justify-content:flex-start;padding:44px 0 5px}.intro{margin-bottom:23px}.board{box-shadow:6px 6px 0 #d797ab}.board-top{font-size:.8rem;padding:11px 13px}.board-main{min-height:260px;grid-template-columns:1fr 110px;gap:0;padding:18px 8px 0 10px}.number-label{font-size:.75rem}.number{font-size:clamp(5.3rem,24vw,8.6rem);text-shadow:4px 4px 0 #f7d9e4}.cat-cake{width:130px;max-width:130px;margin-left:-19px;margin-bottom:7px}.below{margin-top:24px;gap:17px}.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.button{min-height:49px;padding:7px 8px;font-size:.82rem}.button.primary{min-width:0}.settings{font-size:.85rem;flex-wrap:wrap;row-gap:15px}.helper{margin-top:17px}}
+    @media(max-width:850px){.actions{justify-content:center}}
+    @media(max-width:580px){.shell{padding:19px 15px 25px}.brand{font-size:.96rem}.brand-icon{width:36px;height:36px}.range{font-size:.76rem;padding:8px}main{justify-content:flex-start;padding:44px 0 5px}.intro{margin-bottom:23px}.board{box-shadow:6px 6px 0 #d797ab}.board-top{font-size:.8rem;padding:11px 13px}.board-main{min-height:260px;grid-template-columns:1fr 110px;gap:0;padding:18px 8px 0 10px}.number-label{font-size:.75rem}.number{font-size:clamp(5.3rem,24vw,8.6rem);text-shadow:4px 4px 0 #f7d9e4}.cat-cake{width:130px;max-width:130px;margin-left:-19px;margin-bottom:7px}.below{margin-top:24px;gap:17px}.actions{display:grid;width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.button{min-height:49px;padding:7px 8px;font-size:.82rem}.button.primary{min-width:0}.settings{font-size:.85rem;flex-wrap:wrap;row-gap:15px}.helper{margin-top:17px}}
     @media(max-width:370px){.board-main{grid-template-columns:1fr 88px}.cat-cake{width:110px}.number{font-size:4.8rem}.brand{font-size:.85rem}.range{font-size:.68rem}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
   </style>
@@ -69,7 +71,7 @@
     <main>
       <div class="intro">
         <h1>Number Nook</h1>
-        <p>Numbers 1–999. Say each one before the next pops up.</p>
+        <p>Numbers <span id="range-display">1–999</span>. Say each one before the next pops up.</p>
       </div>
       <section class="board" aria-label="Number practice">
         <div class="board-top">
@@ -79,9 +81,9 @@
         <div class="board-main">
           <div class="number-area">
             <p class="number-label">YOUR NUMBER</p>
-            <div class="number" id="number" aria-live="polite">273</div>
+            <div class="number" id="number" aria-live="polite">?</div>
           </div>
-          <img class="cat-cake" src="pixel-cat-cake.png" alt="Pixel cat sitting beside strawberry cake" width="242" height="242">
+          <img class="cat-cake" src="pixel-cat-cake.png" alt="Pixel cat sitting beside strawberry cake" width="242" height="194" decoding="async" fetchpriority="low">
         </div>
         <div class="progress-track" role="progressbar" aria-label="Time until next number" aria-valuemin="0" aria-valuemax="5" aria-valuenow="5" id="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
       </section>
@@ -106,15 +108,21 @@
               <option value="th">ภาษาไทย</option>
             </select>
           </div>
+          <div class="setting">
+            <label for="min-number">Min</label>
+            <input id="min-number" type="number" min="1" max="998" step="1" value="1" inputmode="numeric" aria-describedby="range-help range-error">
+            <label for="max-number">Max</label>
+            <input id="max-number" type="number" min="2" max="999" step="1" value="999" inputmode="numeric" aria-describedby="range-help range-error">
+          </div>
         </div>
       </div>
-      <p class="helper" id="wait-help">Choose 1–60 seconds. Changes start a fresh countdown.</p>
+      <p class="helper" id="wait-help">Wait 1–60 seconds. <span id="range-help">Choose at least two numbers from 1–999.</span> Changes start a fresh countdown.</p>
+      <p class="helper range-error" id="range-error" role="alert" hidden></p>
     </main>
     <footer>Little numbers, big practice.</footer>
   </div>
   <script>
     (() => {
-      const initialNumber = 273;
       const numberEl = document.getElementById('number');
       const board = document.querySelector('.board');
       const statusEl = document.getElementById('status');
@@ -127,10 +135,16 @@
       const speakButton = document.getElementById('speak');
       const soundButton = document.getElementById('sound');
       const waitInput = document.getElementById('wait-seconds');
+      const minInput = document.getElementById('min-number');
+      const maxInput = document.getElementById('max-number');
+      const rangeDisplay = document.getElementById('range-display');
+      const rangeError = document.getElementById('range-error');
       const languageSelect = document.getElementById('voice-language');
       const speechAvailable = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
       let duration = 5000;
-      let number = initialNumber;
+      let number = null;
+      let minNumber = 1;
+      let maxNumber = 999;
       let running = false;
       let started = false;
       let soundOn = speechAvailable;
@@ -146,10 +160,19 @@
         numberEl.classList.add('pop');
       }
 
+      function randomBelow(max) {
+        if (window.crypto && typeof window.crypto.getRandomValues === 'function') {
+          const sample = new Uint32Array(1);
+          const limit = Math.floor(4294967296 / max) * max;
+          do { window.crypto.getRandomValues(sample); } while (sample[0] >= limit);
+          return sample[0] % max;
+        }
+        return Math.floor(Math.random() * max);
+      }
+
       function pickNumber() {
-        let next;
-        do { next = Math.floor(Math.random() * 999) + 1; } while (next === number);
-        number = next;
+        const span = maxNumber - minNumber + 1;
+        number = minNumber + randomBelow(span);
         renderNumber();
       }
 
@@ -227,8 +250,7 @@
         started = false;
         cancelAnimationFrame(frame);
         if (speechAvailable) window.speechSynthesis.cancel();
-        number = initialNumber;
-        renderNumber();
+        pickNumber();
         remaining = duration;
         deadline = 0;
         updateControls();
@@ -242,6 +264,35 @@
         remaining = duration;
         if (running) deadline = performance.now() + duration;
         updateTimer();
+      }
+
+      function setRange(min, max) {
+        if (!Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max > 999 || min >= max) {
+          throw new Error('Choose at least two numbers from 1 to 999.');
+        }
+        if (min === minNumber && max === maxNumber) return;
+        minNumber = min;
+        maxNumber = max;
+        minInput.value = String(min);
+        maxInput.value = String(max);
+        rangeDisplay.textContent = `${min}–${max}`;
+        rangeError.hidden = true;
+        pickNumber();
+        remaining = duration;
+        if (running) deadline = performance.now() + duration;
+        updateTimer();
+        if (soundOn && started) sayNumber();
+      }
+
+      function applyRangeInputs() {
+        try {
+          setRange(Number(minInput.value), Number(maxInput.value));
+        } catch (error) {
+          minInput.value = String(minNumber);
+          maxInput.value = String(maxNumber);
+          rangeError.textContent = error.message;
+          rangeError.hidden = false;
+        }
       }
 
       playButton.addEventListener('click', () => setRunning(!running));
@@ -266,6 +317,10 @@
         if (Number.isInteger(value) && value >= 1 && value <= 60) setWaitSeconds(value);
         else waitInput.value = String(duration / 1000);
       });
+      minInput.addEventListener('change', applyRangeInputs);
+      maxInput.addEventListener('change', applyRangeInputs);
+      minInput.addEventListener('blur', applyRangeInputs);
+      maxInput.addEventListener('blur', applyRangeInputs);
       languageSelect.addEventListener('change', () => {
         language = languageSelect.value;
         if (soundOn) sayNumber();
@@ -282,12 +337,14 @@
           void Promise.resolve(document.modelContext.registerTool({
             name: 'control_number_practice',
             title: 'Control number practice',
-            description: 'Start, pause, advance, or reset number practice, or change its wait time and speech language.',
+            description: 'Start, pause, advance, or reset number practice, or change its wait time, number range, and speech language.',
             inputSchema: {
               type: 'object',
               properties: {
-                action: { type: 'string', enum: ['start', 'pause', 'next', 'reset', 'set_wait', 'set_language'] },
+                action: { type: 'string', enum: ['start', 'pause', 'next', 'reset', 'set_wait', 'set_range', 'set_language'] },
                 seconds: { type: 'integer', minimum: 1, maximum: 60 },
+                min: { type: 'integer', minimum: 1, maximum: 998 },
+                max: { type: 'integer', minimum: 2, maximum: 999 },
                 language: { type: 'string', enum: ['en', 'th'] }
               },
               required: ['action'],
@@ -295,8 +352,9 @@
             },
             annotations: { readOnlyHint: false },
             execute(input) {
-              if (!input || !['start', 'pause', 'next', 'reset', 'set_wait', 'set_language'].includes(input.action)) throw new Error('Invalid action.');
+              if (!input || !['start', 'pause', 'next', 'reset', 'set_wait', 'set_range', 'set_language'].includes(input.action)) throw new Error('Invalid action.');
               if (input.action === 'set_wait') setWaitSeconds(input.seconds);
+              if (input.action === 'set_range') setRange(input.min, input.max);
               if (input.action === 'set_language') {
                 if (!['en', 'th'].includes(input.language)) throw new Error('Choose en or th.');
                 language = input.language;
@@ -307,11 +365,12 @@
               if (input.action === 'pause') setRunning(false);
               if (input.action === 'next') nextButton.click();
               if (input.action === 'reset') reset();
-              return { number, running, waitSeconds: duration / 1000, language, secondsUntilNext: Math.ceil(remaining / 1000) };
+              return { number, running, minNumber, maxNumber, waitSeconds: duration / 1000, language, secondsUntilNext: Math.ceil(remaining / 1000) };
             }
           })).catch(() => {});
         } catch (_) {}
       }
+      pickNumber();
       updateControls();
       updateTimer();
     })();
