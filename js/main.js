@@ -245,6 +245,16 @@ const PROJECTS = [
         status: 'LIVE',
         url: 'https://cake-waen-2.vercel.app/',
     },
+    {
+        id: 'number-nook',
+        title: 'NUMBER NOOK',
+        sub: 'Math Practice',
+        desc: 'Numbers 1–999 with English and Thai speech.',
+        tags: ['MATH', 'PIXEL ART'],
+        status: 'LIVE',
+        url: '/number/',
+        thumb: 'number/pixel-cat-cake.png',
+    },
 ];
 
 function openProjects() {
@@ -260,20 +270,29 @@ function _buildProjectsGrid() {
     document.getElementById('projectsGrid').innerHTML = PROJECTS.map(p => {
         const live = p.status === 'LIVE';
         const tags = p.tags.map(t => `<span class="proj-tag">${t}</span>`).join('');
+        const thumb = p.thumb ? `<img class="proj-card-thumb" src="${p.thumb}" alt="" loading="lazy">` : '';
+        const cardClass = p.id === 'number-nook' ? ' proj-card-number' : '';
+        const cardTag = p.url ? 'a' : 'div';
+        const cardAction = p.url
+            ? `href="${p.url}"${p.url.startsWith('/') ? '' : ' target="_blank" rel="noopener"'}`
+            : live
+                ? `role="button" tabindex="0" onclick="launchProject('${p.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();launchProject('${p.id}')}"`
+                : '';
         const action = live
             ? `<span class="proj-play">▶ LAUNCH</span>`
             : `<span class="proj-wip">// Coming soon</span>`;
         return `
-        <div class="proj-card ${live ? 'proj-live' : 'proj-soon'}" ${live ? `onclick="launchProject('${p.id}')"` : ''}>
+        <${cardTag} class="proj-card ${live ? 'proj-live' : 'proj-soon'}${cardClass}" ${cardAction}>
             <div class="proj-card-top">
                 <div class="proj-card-tags">${tags}</div>
                 <span class="proj-status ${live ? 'proj-status-live' : 'proj-status-soon'}">${p.status}</span>
             </div>
+            ${thumb}
             <div class="proj-card-title">${p.title}</div>
             <div class="proj-card-sub">${p.sub}</div>
             <div class="proj-card-desc">${p.desc}</div>
             <div class="proj-card-action">${action}</div>
-        </div>`;
+        </${cardTag}>`;
     }).join('');
 }
 
